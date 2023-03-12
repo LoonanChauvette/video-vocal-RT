@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "video-vocal-rt"
-version = "0.1.0"
+version = "0.1.1"
 description = "Video-Vocal-RT: a minimal package for vocal response to video"
 authors = ["Loonan Chauvette <loonan.chauvette@gmail.com>"]
 readme = "README.md"
