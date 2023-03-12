@@ -12,6 +12,9 @@ DATA_DIRECTORY  = "DATA_FOLDER"
 PARTICIPANT_ID  = "test"            # Chosen by the experimenter
 PARTICIPANT_ID2 = str(time.time())  # Random to avoid collisions
 
+FIXATION_DUR    = 1000 # in ms
+WHITE_DUR       = 1000 # in ms
+
 sample_rate     = 44100
 audio_duration  = 6
 
@@ -38,17 +41,15 @@ for i, video_file in enumerate(video_files):
     video      = cv2.VideoCapture(video_path)
     fps        = video.get(cv2.CAP_PROP_FPS)
     num_frames = int(video.get(cv2.CAP_PROP_FRAME_COUNT))
-
     
     # Fixation screen display
     fixation = cv2.imread('fixation.png')
     cv2.imshow('main_window', fixation)
-    cv2.waitKey(1000)
+    cv2.waitKey(FIXATION_DUR)
 
     recording    = rec(int(audio_duration * sample_rate), samplerate=sample_rate, channels=1)
     
     while True: # Video playing loop
-        
         ret, frame = video.read()
         if not ret:
             break
@@ -59,7 +60,8 @@ for i, video_file in enumerate(video_files):
     # white screen display
     white = cv2.imread('white_background.png')
     cv2.imshow('main_window', white)
-    cv2.waitKey(1000)
+    cv2.waitKey(WHITE_DUR)
+    
 
     wait() # wait for recording to finish
     audio_file = f"{video_file[:-4]}_{PARTICIPANT_ID}_{PARTICIPANT_ID2}.wav"
@@ -69,6 +71,7 @@ for i, video_file in enumerate(video_files):
     ws.append([PARTICIPANT_ID, i+1, video_file, audio_path])
 
     video.release()
+
 cv2.destroyAllWindows()
 
 data_file = f"{PARTICIPANT_ID}_{PARTICIPANT_ID2}.xlsx"
