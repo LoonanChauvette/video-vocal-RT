@@ -497,6 +497,18 @@ files = [
 ]
 
 [[package]]
+name = "pysimplegui"
+version = "4.60.4"
+description = "Python GUIs for Humans. Launched in 2018. It's 2022 & PySimpleGUI is an ACTIVE & supported project. Super-simple to create custom GUI's. 325+ Demo programs & Cookbook for rapid start. Extensive documentation. Main docs at www.PySimpleGUI.org. Fun & your success are the focus. Examples using Machine Learning (GUI, OpenCV Integration), Rainmeter Style Desktop Widgets, Matplotlib + Pyplot, PIL support, add GUI to command line scripts, PDF & Image Viewers. Great for beginners & advanced GUI programmers."
+category = "main"
+optional = false
+python-versions = "*"
+files = [
+    {file = "PySimpleGUI-4.60.4-py3-none-any.whl", hash = "sha256:e133fbd21779f0f125cebbc2a4e1f5a931a383738661013ff33ad525d5611eda"},
+    {file = "PySimpleGUI-4.60.4.tar.gz", hash = "sha256:f88c82c301a51aea35be605dc060bcceb0dcb6682e16280544884701ab4b23ba"},
+]
+
+[[package]]
 name = "requests"
 version = "2.28.2"
 description = "Python HTTP for Humans."
@@ -619,4 +631,4 @@ socks = ["PySocks (>=1.5.6,!=1.5.7,<2.0)"]
 [metadata]
 lock-version = "2.0"
 python-versions = ">=3.10,<3.12"
-content-hash = "1e0322f99a67c2de86e9ec64fbaf8aa9e6f76a56ff70864e8f88f30380e3b810"
+content-hash = "f8e82e27621baebddf38c202eff98028014d5bde1c40fe94ae02fdde81af9e44"
