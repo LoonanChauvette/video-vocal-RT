@@ -1,6 +1,6 @@
-.avi
-.wav
-.xlsx
+*.avi
+*.wav
+*.xlsx
 
 
 # Unit test / coverage reports
