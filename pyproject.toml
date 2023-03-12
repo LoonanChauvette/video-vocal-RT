@@ -5,8 +5,8 @@ description = "Video-Vocal-RT: a minimal package for vocal response to video"
 authors = ["Loonan Chauvette <loonan.chauvette@gmail.com>"]
 readme = "README.md"
 license = "MIT"
-homepage = "https://github.com/loonan/video-vocal-rt"
-repository = "https://github.com/loonan/video-vocal-rt"
+homepage = "https://github.com/LoonanChauvette/video-vocal-RT"
+repository = "https://github.com/LoonanChauvette/video-vocal-RT"
 keywords = ["video", "audio", "psychology", "reaction time"]
 classifiers = [
     "Operating System :: OS Independent",
