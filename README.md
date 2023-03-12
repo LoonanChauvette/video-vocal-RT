@@ -5,9 +5,10 @@ A minimal package to record vocal response to video stimuli. Useful for vocal re
 I will provide more information soon 😉
 
 # Citation
-Please cite as : 
+ 
 ```
-Chauvette, L. (2023). Video-Vocal-RT: a minimal package for vocal response to video. https://github.com/LoonanChauvette/video-vocal-RT
+Chauvette, L. (2023). Video-Vocal-RT: a minimal package for vocal response to video.
+https://github.com/LoonanChauvette/video-vocal-RT
 ````
 
 Bibtex:
