@@ -3,102 +3,132 @@ import random
 import time
 import cv2
 import PySimpleGUI as sg
-from sounddevice import rec, wait
+import sounddevice as sd 
 from scipy.io.wavfile import write
 from openpyxl import Workbook
 
 class Parameters:
-    def __init__(self):
-        self.participant_ID = None
-        self.fixation_duration = None
-        self.white_duration = None
-        self.audio_duration = None
-        self.video_dir = None
-        self.audio_dir = None
-        self.data_dir = None
-        self.sample_rate = 44100
-        self.unique_key = str(time.time())
-        
+    def __init__(self, participant_id="", fixation_duration=1000, white_duration=1000,
+                 audio_duration=6, video_dir="VIDEO_FILES", audio_dir="AUDIO_RECORDINGS",
+                 data_dir="DATA_FOLDER", sample_rate=44100):
+        self.participant_id = participant_id
+        self.fixation_duration = fixation_duration
+        self.white_duration = white_duration
+        self.audio_duration = audio_duration
+        self.video_dir = video_dir
+        self.audio_dir = audio_dir
+        self.data_dir = data_dir
+        self.sample_rate = sample_rate
+        self.unique_key = str(time.time())      
 
-def gui():
-    layout = [
+    def gui_layout(self):
+        layout = [
 
-        [
-        sg.Column([
-            [sg.Text("Participant ID:")],
-            [sg.Text("Fixation Duration (ms):")],
-            [sg.Text("White Duration (ms):")],
-            [sg.Text("Audio Duration (s):")],
-            ], element_justification="left", pad=(0, 5)),
+            [
+            sg.Column([
+                [sg.Text("Participant ID:")],
+                [sg.Text("Fixation Duration (ms):")],
+                [sg.Text("White Duration (ms):")],
+                [sg.Text("Audio Duration (s):")],
+                ], element_justification="left", pad=(0, 5)),
 
-        sg.Column([
-            [sg.InputText(size = (35, 1), key = "-PARTICIPANT_ID-")],
-            [sg.InputText(default_text="1000", key="-FIX-DURATION-", size=(10, 1))],
-            [sg.InputText(default_text="1000", key="-WHITE-DURATION-", size=(10, 1))],
-            [sg.InputText(default_text="6", key="-AUDIO-DURATION-", size=(10, 1))],
-            ], element_justification="left", pad=(0, 5))
-        ],
+            sg.Column([
+                [sg.InputText(size = (35, 1), key = "-PARTICIPANT_ID-")],
+                [sg.InputText(default_text="1000", key="-FIX-DURATION-", size=(10, 1))],
+                [sg.InputText(default_text="1000", key="-WHITE-DURATION-", size=(10, 1))],
+                [sg.InputText(default_text="6", key="-AUDIO-DURATION-", size=(10, 1))],
+                ], element_justification="left", pad=(0, 5))
+            ],
 
-        [
-        sg.Column([
-            [sg.Text("Video Directory:")],
-            [sg.Text("Audio Directory:")],
-            [sg.Text("Data Directory:")],
-            ], element_justification="left", pad=(0, 5)),
+            [
+            sg.Column([
+                [sg.Text("Video Directory:")],
+                [sg.Text("Audio Directory:")],
+                [sg.Text("Data Directory:")],
+                ], element_justification="left", pad=(0, 5)),
 
-        sg.Column([
-            [sg.InputText(default_text="VIDEO_FILES", key="-VIDEO-DIR-", size=(40, 1)), sg.FolderBrowse()],
-            [sg.InputText(default_text="AUDIO_RECORDINGS", key="-AUDIO-DIR-", size=(40, 1)), sg.FolderBrowse()],
-            [sg.InputText(default_text="DATA_FOLDER", key="-DATA-DIR-", size=(40, 1)), sg.FolderBrowse()],
-            ], element_justification="left", pad=(0, 5))
-        ],
-        
-        [
-        sg.Column([ 
-            [sg.Button("Start Experiment", size=(20,1))]
-            ], expand_x=True, element_justification="left", pad=(0, 5)),
-        
-        sg.Column([ 
-            [sg.Button("Reset", size=(10,1)), sg.Button("Cancel", size=(10,1))] 
-            ], expand_x=True, element_justification="right", pad=(0, 5))
-        ],
-    ]
+            sg.Column([
+                [sg.InputText(default_text="VIDEO_FILES", key="-VIDEO-DIR-", size=(40, 1)), sg.FolderBrowse()],
+                [sg.InputText(default_text="AUDIO_RECORDINGS", key="-AUDIO-DIR-", size=(40, 1)), sg.FolderBrowse()],
+                [sg.InputText(default_text="DATA_FOLDER", key="-DATA-DIR-", size=(40, 1)), sg.FolderBrowse()],
+                ], element_justification="left", pad=(0, 5))
+            ],
+            
+            [
+            sg.Column([ 
+                [sg.Button("Start Experiment", size=(20,1))]
+                ], expand_x=True, element_justification="left", pad=(0, 5)),
+            
+            sg.Column([ 
+                [sg.Button("Reset", size=(10,1)), sg.Button("Cancel", size=(10,1))] 
+                ], expand_x=True, element_justification="right", pad=(0, 5))
+            ],
+        ]
+        return layout
     
-    window = sg.Window("Experiment Setup", layout)
+    def validate_directory(self, dir_path):
+        if not os.path.isdir(dir_path):
+            raise ValueError(f"{dir_path} is not a valid directory path")
+        return dir_path
+
+    def validate_positive_int(self, value):
+        if not isinstance(value, int):
+            raise ValueError(f"{value} is not a valid integer")
+        if value <= 0:
+            raise ValueError(f"{value} is not a valid positive integer")
+        return value
+
+    def set_attributes_values(self, values):
+        self.participant_id = str(values["-PARTICIPANT_ID-"])
+        self.fixation_duration = self.validate_positive_int(int(values["-FIX-DURATION-"]))
+        self.white_duration    = self.validate_positive_int(int(values["-WHITE-DURATION-"]))
+        self.audio_duration    = self.validate_positive_int(int(values["-AUDIO-DURATION-"]))
+        self.video_dir = self.validate_directory(values["-VIDEO-DIR-"])
+        self.audio_dir = self.validate_directory(values["-AUDIO-DIR-"])
+        self.data_dir  = self.validate_directory(values["-DATA-DIR-"])
+
+    def reset_attributes_values(self, window):
+        window["-PARTICIPANT_ID-"].update(str(self.participant_id))
+        window["-FIX-DURATION-"].update(str(self.fixation_duration))
+        window["-WHITE-DURATION-"].update(str(self.fixation_duration))
+        window["-AUDIO-DURATION-"].update(str(self.audio_duration))
+        window["-VIDEO-DIR-"].update(str(self.video_dir))
+        window["-AUDIO-DIR-"].update(str(self.audio_dir))
+        window["-DATA-DIR-"].update(str(self.data_dir))
+    
+    def get_from_gui(self):
+        layout = self.gui_layout()
+        window = sg.Window("Experiment Setup", layout)
+        
+        while True:
+            event, values = window.read()
+            if event == "Cancel" or event == sg.WIN_CLOSED:
+                window.close()
+                exit()
+
+            elif event == "Start Experiment":
+                try:
+                    self.set_attributes_values(values)
+                    window.close()
+                    break
+                except Exception as e:
+                    sg.popup(f"Error: {e}")
+                    continue
+            
+            if event == "Reset":
+                self.reset_attributes_values(window)
+
+        window.close()
+
+def get_parameters_from_user():
     parameters = Parameters()
-    
-    while True:
-        event, values = window.read()
-        if event == "Cancel" or event == sg.WIN_CLOSED:
-            window.close()
-            exit()
-        if event == "Start Experiment":
-            parameters.participant_id = str(values["-PARTICIPANT_ID-"])
-            parameters.fixation_duration = int(values["-FIX-DURATION-"])
-            parameters.white_duration = int(values["-WHITE-DURATION-"])
-            parameters.audio_duration = int(values["-AUDIO-DURATION-"])
-            parameters.video_dir = values["-VIDEO-DIR-"]
-            parameters.audio_dir = values["-AUDIO-DIR-"]
-            parameters.data_dir = values["-DATA-DIR-"]
-            window.close()
-            break
-        if event == "Reset":
-            window["-PARTICIPANT_ID-"].update("")
-            window["-FIX-DURATION-"].update("1000")
-            window["-WHITE-DURATION-"].update("1000")
-            window["-AUDIO-DURATION-"].update("6")
-            window["-VIDEO-DIR-"].update("VIDEO_FILES")
-            window["-AUDIO-DIR-"].update("AUDIO_RECORDINGS")
-            window["-DATA-DIR-"].update("DATA_FOLDER")
-
-    window.close()
+    parameters.get_from_gui()
     return parameters
 
 def main():
     # Create the GUI to enter experiment parameters, returns a parameters object
-    parameters = gui()
+    parameters = get_parameters_from_user()
     video_files = [f for f in os.listdir(parameters.video_dir) if f.endswith('.avi')]
-    print(parameters.participant_id)
     random.shuffle(video_files)
 
     # Set up excel file
@@ -116,35 +146,29 @@ def main():
     cv2.waitKey(0)
 
     for i, video_file in enumerate(video_files):
+        video = cv2.VideoCapture(os.path.join(parameters.video_dir, video_file))
+        mspf = int(1000/video.get(cv2.CAP_PROP_FPS))  # ms per frame
 
-        video_path = os.path.join(parameters.video_dir, video_file)
-        video      = cv2.VideoCapture(video_path)
-        fps        = video.get(cv2.CAP_PROP_FPS)
-        num_frames = int(video.get(cv2.CAP_PROP_FRAME_COUNT))
-        
         # Fixation screen display
-        fixation = cv2.imread('fixation.png')
-        cv2.imshow('main_window', fixation)
+        cv2.imshow('main_window', cv2.imread('fixation.png'))
         cv2.waitKey(parameters.fixation_duration)
 
-        recording    = rec(int(parameters.audio_duration * parameters.sample_rate), 
-                        samplerate=parameters.sample_rate, channels=1)
+        num_samples = int(parameters.audio_duration*parameters.sample_rate)
+        recording = sd.rec(num_samples, samplerate=parameters.sample_rate, channels=1)
         
         while True: # Video playing loop
             ret, frame = video.read()
             if not ret:
                 break
-            
             cv2.imshow('main_window', frame)
-            cv2.waitKey(int(1000/(fps*2)))  # I don't really understand why
-
+            cv2.waitKey(mspf)
+            
         # white screen display
         white = cv2.imread('white_background.png')
         cv2.imshow('main_window', white)
         cv2.waitKey(parameters.white_duration)
-        
 
-        wait() # wait for recording to finish
+        sd.wait() # wait for recording to finish
         audio_file = f"{video_file[:-4]}_{parameters.participant_id}_{parameters.unique_key}.wav"
         audio_path = os.path.join(parameters.audio_dir, audio_file)
         write(audio_path, parameters.sample_rate, recording)
