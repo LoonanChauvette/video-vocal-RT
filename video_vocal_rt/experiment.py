@@ -127,7 +127,18 @@ def get_parameters_from_user():
     return parameters
 
 def create_white_screen():
-    return np.ones((480, 640, 3), dtype=np.uint8) * 255
+    _, _, width, height = cv2.getWindowImageRect('main_window')
+    return np.ones((height, width, 3), dtype=np.uint8) * 255
+
+def create_instruction_screen():
+    instructions = create_white_screen()
+    text = "Press any key to start the experiment"
+    font = cv2.FONT_HERSHEY_SIMPLEX
+    location = (100, 200)
+    font_size = 0.5
+    color = (0, 0, 0) 
+    cv2.putText(instructions, text, location, font, font_size, color, 1, cv2.LINE_AA)
+    return instructions
 
 def create_fixation_screen():
     fixation = create_white_screen()
@@ -153,8 +164,9 @@ def run():
     # Display blank screen and wait for key press
     blank = create_white_screen()
     fixation = create_fixation_screen()
+    instructions = create_instruction_screen()
 
-    cv2.imshow('main_window', blank)
+    cv2.imshow('main_window', instructions)
     cv2.waitKey(0)
 
     for i, video_file in enumerate(video_files):
