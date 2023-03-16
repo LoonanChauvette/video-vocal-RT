@@ -125,7 +125,7 @@ def get_parameters_from_user():
     parameters.get_from_gui()
     return parameters
 
-def main():
+def run():
     # Create the GUI to enter experiment parameters, returns a parameters object
     parameters = get_parameters_from_user()
     video_files = [f for f in os.listdir(parameters.video_dir) if f.endswith('.avi')]
@@ -183,4 +183,4 @@ def main():
     wb.save(os.path.join(parameters.data_dir, data_file))
 
 if __name__ == "__main__":
-    main()
+    run()
