@@ -133,6 +133,7 @@ def create_white_screen():
 def create_instruction_screen():
     instructions = create_white_screen()
     text = "Press any key to start the experiment"
+    
     font = cv2.FONT_HERSHEY_SIMPLEX
     location = (100, 200)
     font_size = 0.5
