@@ -4,6 +4,7 @@ import time
 import cv2
 import PySimpleGUI as sg
 import sounddevice as sd 
+import numpy as np
 from scipy.io.wavfile import write
 from openpyxl import Workbook
 
@@ -125,6 +126,15 @@ def get_parameters_from_user():
     parameters.get_from_gui()
     return parameters
 
+def create_white_screen():
+    return np.ones((480, 640, 3), dtype=np.uint8) * 255
+
+def create_fixation_screen():
+    fixation = create_white_screen()
+    cv2.line(fixation, (320, 240-20), (320, 240+20), (0, 0, 0), thickness=3)
+    cv2.line(fixation, (320-20, 240), (320+20, 240), (0, 0, 0), thickness=3)
+    return fixation
+
 def run():
     # Create the GUI to enter experiment parameters, returns a parameters object
     parameters = get_parameters_from_user()
@@ -141,7 +151,9 @@ def run():
     cv2.setWindowProperty('main_window', cv2.WND_PROP_FULLSCREEN, cv2.WINDOW_FULLSCREEN)
 
     # Display blank screen and wait for key press
-    blank = cv2.imread('white_background.png')
+    blank = create_white_screen()
+    fixation = create_fixation_screen()
+
     cv2.imshow('main_window', blank)
     cv2.waitKey(0)
 
@@ -150,7 +162,7 @@ def run():
         mspf = int(1000/video.get(cv2.CAP_PROP_FPS))  # ms per frame
 
         # Fixation screen display
-        cv2.imshow('main_window', cv2.imread('fixation.png'))
+        cv2.imshow('main_window', fixation)
         cv2.waitKey(parameters.fixation_duration)
 
         num_samples = int(parameters.audio_duration*parameters.sample_rate)
@@ -164,8 +176,7 @@ def run():
             cv2.waitKey(mspf)
             
         # white screen display
-        white = cv2.imread('white_background.png')
-        cv2.imshow('main_window', white)
+        cv2.imshow('main_window', blank)
         cv2.waitKey(parameters.white_duration)
 
         sd.wait() # wait for recording to finish
