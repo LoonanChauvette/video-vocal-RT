@@ -5,6 +5,7 @@ import cv2
 import PySimpleGUI as sg
 import sounddevice as sd 
 import numpy as np
+import tkinter as tk
 from scipy.io.wavfile import write
 from openpyxl import Workbook
 
@@ -127,24 +128,32 @@ def get_parameters_from_user():
     return parameters
 
 def create_white_screen():
-    _, _, width, height = cv2.getWindowImageRect('main_window')
+    root = tk.Tk()
+    height = root.winfo_screenheight()
+    width = root.winfo_screenwidth()
+    root.destroy()
     return np.ones((height, width, 3), dtype=np.uint8) * 255
 
-def create_instruction_screen():
+def get_center_coordinates(image):
+    height, width, _ = image.shape
+    return (width // 2, height // 2)    # return (x, y)
+
+def create_instruction_screen(text):
     instructions = create_white_screen()
-    text = "Press any key to start the experiment"
-    
-    font = cv2.FONT_HERSHEY_SIMPLEX
-    location = (100, 200)
-    font_size = 0.5
-    color = (0, 0, 0) 
-    cv2.putText(instructions, text, location, font, font_size, color, 1, cv2.LINE_AA)
+    x, y = get_center_coordinates(instructions)
+    x, y = x //2, y //2
+    cv2.putText(img=instructions, text=text, org = (x,y),
+                fontFace=cv2.FONT_HERSHEY_SIMPLEX, fontScale=0.5,
+                color=(0,0,0), thickness=1, lineType=cv2.LINE_AA)
     return instructions
 
 def create_fixation_screen():
     fixation = create_white_screen()
-    cv2.line(fixation, (320, 240-20), (320, 240+20), (0, 0, 0), thickness=3)
-    cv2.line(fixation, (320-20, 240), (320+20, 240), (0, 0, 0), thickness=3)
+    x, y = get_center_coordinates(fixation)
+
+    size = 20
+    cv2.line(fixation, (x - size, y), (x + size, y), (0, 0, 0), thickness=2)
+    cv2.line(fixation, (x, y - size), (x, y + size), (0, 0, 0), thickness=2)
     return fixation
 
 def run():
@@ -158,21 +167,18 @@ def run():
     ws = wb.active
     ws.append(['ID', 'Order', 'Video', 'Audio_path'])
 
-    # Set up full screen display
-    cv2.namedWindow('main_window', cv2.WND_PROP_FULLSCREEN)
-    cv2.setWindowProperty('main_window', cv2.WND_PROP_FULLSCREEN, cv2.WINDOW_FULLSCREEN)
-
     # Display blank screen and wait for key press
     blank = create_white_screen()
     fixation = create_fixation_screen()
-    instructions = create_instruction_screen()
+    instructions = create_instruction_screen("Press any key to start the experiment")
 
+    cv2.namedWindow('main_window', cv2.WINDOW_NORMAL)
     cv2.imshow('main_window', instructions)
     cv2.waitKey(0)
 
     for i, video_file in enumerate(video_files):
         video = cv2.VideoCapture(os.path.join(parameters.video_dir, video_file))
-        mspf = int(1000/video.get(cv2.CAP_PROP_FPS))  # ms per frame
+        mspf = int(1000 / video.get(cv2.CAP_PROP_FPS))  # ms per frame
 
         # Fixation screen display
         cv2.imshow('main_window', fixation)
