@@ -14,14 +14,14 @@ from validation import is_dir, str_to_int
 class Parameters:
     def __init__(self, participant_id="", fixation_cross_duration=1000, white_duration=1000,
                  audio_duration=5, video_dir="VIDEO_FILES", audio_dir="AUDIO_RECORDINGS",
-                 data_dir="DATA_FOLDER", sample_rate=44100):
+                 instruction_path=None, sample_rate=44100):
         self.participant_id = participant_id
         self.cross_dur = fixation_cross_duration
         self.white_dur = white_duration
         self.audio_dur = audio_duration
         self.video_dir = video_dir
         self.audio_dir = audio_dir
-        self.data_dir = data_dir
+        self.inst_path = instruction_path
         self.sample_rate = sample_rate
         self.num_samples = int(self.audio_dur*self.sample_rate)
         self.audio_devices = [(d["index"], d["name"]) for d in sd.query_devices()]
@@ -53,13 +53,13 @@ class Parameters:
             sg.Column([
                 [sg.Text("Video Directory:")],
                 [sg.Text("Audio Directory:")],
-                [sg.Text("Data Directory:")],
+                [sg.Text("Instructions File (.txt):")],
                 ], element_justification="left", pad=(0, 5)),
 
             sg.Column([
                 [sg.InputText(default_text=self.video_dir, key="-VIDEO-DIR-", size=(40, 1)), sg.FolderBrowse()],
                 [sg.InputText(default_text=self.audio_dir, key="-AUDIO-DIR-", size=(40, 1)), sg.FolderBrowse()],
-                [sg.InputText(default_text=self.data_dir, key="-DATA-DIR-", size=(40, 1)), sg.FolderBrowse()],
+                [sg.InputText(default_text=self.inst_path, key="-INST-PATH-", size=(40, 1)), sg.FileBrowse()],
                 ], element_justification="left", pad=(0, 5))
             ],
             
@@ -85,7 +85,7 @@ class Parameters:
         self.audio_dev = str_to_int(values["-AUDIO-DEV-"][0])
         self.video_dir = is_dir(values["-VIDEO-DIR-"])
         self.audio_dir = is_dir(values["-AUDIO-DIR-"])
-        self.data_dir  = is_dir(values["-DATA-DIR-"])
+        self.inst_path = values["-INST-PATH-"]
 
     def reset_attributes_values(self, window):
         window["-PARTICIPANT_ID-"].update(str(self.participant_id))
@@ -95,7 +95,7 @@ class Parameters:
         window["-AUDIO-DEV-"].update(self.audio_devices[sd.default.device[0]])
         window["-VIDEO-DIR-"].update(str(self.video_dir))
         window["-AUDIO-DIR-"].update(str(self.audio_dir))
-        window["-DATA-DIR-"].update(str(self.data_dir))
+        window["-INST-PATH-"].update(str(self.inst_path))
     
     def get_from_gui(self):
         layout = self.gui_layout()
@@ -139,11 +139,15 @@ def get_center_coordinates(image):
 
 def create_instruction_screen(text):
     instructions = create_white_screen()
-    x, y = get_center_coordinates(instructions)
-    x, y = x //2, y //2
-    cv2.putText(img=instructions, text=text, org = (x,y),
-                fontFace=cv2.FONT_HERSHEY_SIMPLEX, fontScale=0.5,
-                color=(0,0,0), thickness=1, lineType=cv2.LINE_AA)
+    x_mid, y_mid = get_center_coordinates(instructions)
+    x0, y0 = x_mid //2, y_mid //2
+    dy = 18
+    for i, line in enumerate(text.split('\n')):
+        y = y0 + i * dy
+        x = x0
+        cv2.putText(img=instructions, text=line, org = (x,y),
+                    fontFace=cv2.FONT_HERSHEY_SIMPLEX, fontScale=1,
+                    color=(0,0,0), thickness=2, lineType=cv2.LINE_AA)
     return instructions
 
 def create_fixation_screen():
@@ -158,8 +162,14 @@ def create_fixation_screen():
 def run():
     # Create the GUI to enter experiment parameters, returns a parameters object
     params = get_parameters_from_user()
+
+    # List of all the files in the video directory and shuffle them
     video_files = [f for f in os.listdir(params.video_dir) if f.endswith('.avi')]
     random.shuffle(video_files)
+
+    # Create a new directory with the participant name in the audio directory 
+    participant_dir = os.path.join(params.audio_dir, params.participant_id)
+    os.makedirs(participant_dir, exist_ok=True)   
 
     # Set up excel file
     wb = Workbook()
@@ -169,7 +179,11 @@ def run():
     # Display blank screen and wait for key press
     blank = create_white_screen()
     fixation = create_fixation_screen()
-    instructions = create_instruction_screen("Press any key to start the experiment")
+    try:
+        with open (params.inst_path, 'r') as f:
+            instructions = create_instruction_screen(f.read())
+    except FileNotFoundError:
+        instructions = create_instruction_screen("Press any key to continue...")
 
     cv2.namedWindow('main_window', cv2.WINDOW_NORMAL)
     cv2.imshow('main_window', instructions)
@@ -183,7 +197,7 @@ def run():
         cv2.imshow('main_window', fixation)
         cv2.waitKey(params.cross_dur)
 
-        recording = sd.rec(params.num_samples, samplerate=params.sample_rate, channels=1)
+        recording = sd.rec(params.num_samples, samplerate=params.sample_rate, channels=1, device=params.audio_device)
         
         while True: # Video playing loop
             ret, frame = video.read()
@@ -198,7 +212,7 @@ def run():
 
         sd.wait() # wait for recording to finish
         audio_file = f"{video_file[:-4]}_{params.participant_id}_{params.unique_key}.wav"
-        audio_path = os.path.join(params.audio_dir, audio_file)
+        audio_path = os.path.join(participant_dir, audio_file)
         write(audio_path, params.sample_rate, recording)
 
         ws.append([params.participant_id, i+1, video_file, audio_path])
@@ -208,7 +222,7 @@ def run():
     cv2.destroyAllWindows()
 
     data_file = f"{params.participant_id}_{params.unique_key}.xlsx"
-    wb.save(os.path.join(params.data_dir, data_file))
+    wb.save(os.path.join(participant_dir, data_file))
 
 if __name__ == "__main__":
     run()
