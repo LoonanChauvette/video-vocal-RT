@@ -13,7 +13,7 @@ from validation import is_dir, str_to_int
 
 class Parameters:
     def __init__(self, participant_id="", fixation_cross_duration=1000, white_duration=1000,
-                 audio_duration=5, video_dir="VIDEO_FILES", audio_dir="AUDIO_RECORDINGS",
+                 audio_duration=5, video_dir="VIDEO_FILES", audio_dir="RECORDINGS",
                  instruction_path=None, sample_rate=44100):
         self.participant_id = participant_id
         self.cross_dur = fixation_cross_duration
