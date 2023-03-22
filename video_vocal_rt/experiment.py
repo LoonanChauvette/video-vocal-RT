@@ -9,7 +9,7 @@ import tkinter as tk
 from scipy.io.wavfile import write
 from openpyxl import Workbook
 
-from validation import is_dir, str_to_int
+from .validation import is_dir, str_to_int
 
 class Parameters:
     def __init__(self, participant_id="", fixation_cross_duration=1000, white_duration=1000,
