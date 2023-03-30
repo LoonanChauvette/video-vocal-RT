@@ -28,13 +28,13 @@ def is_dir(dir_path: str) -> str:
     return dir_path
 
 
-def str_to_int(value: str, positive: bool = True) -> int:
+def str_to_int(value: str, positive: bool = False) -> int:
     """
     Converts a given string to an integer and enforces that it is positive if specified.
 
     Args:
         value (str): The string to be converted to an integer.
-        positive (bool, optional): If True (default), the resulting integer must be positive. 
+        positive (bool, optional): If True, the resulting integer must be positive. 
 
     Returns:
         int: The resulting integer.
@@ -246,7 +246,9 @@ def run():
             if not ret:
                 break
             cv2.imshow('main_window', frame)
-            cv2.waitKey(mspf)
+            key = cv2.waitKey(mspf)
+            if key == ord('q'): # Exit loop if 'q' key is pressed
+                exit()
             
         # white screen display
         cv2.imshow('main_window', blank)
