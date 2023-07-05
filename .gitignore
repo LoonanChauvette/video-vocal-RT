@@ -1,6 +1,7 @@
 *.avi
 *.wav
 *.xlsx
+*.exe
 
 # Distribution / packaging
 .Python

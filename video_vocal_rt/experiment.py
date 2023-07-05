@@ -8,6 +8,8 @@ import numpy as np
 import tkinter as tk
 from scipy.io.wavfile import write
 from openpyxl import Workbook
+from PIL import Image, ImageDraw, ImageFont
+
 
 def is_dir(dir_path: str) -> str:
     """
@@ -170,36 +172,43 @@ def get_parameters_from_user():
 
 def create_white_screen():
     root = tk.Tk()
-    height = root.winfo_screenheight()
-    width = root.winfo_screenwidth()
+    h = root.winfo_screenheight()
+    w = root.winfo_screenwidth()
     root.destroy()
-    return np.ones((height, width, 3), dtype=np.uint8) * 255
+    return Image.new('RGB', (w, h), color = (255, 255, 255))
 
 def get_center_coordinates(image):
-    height, width, _ = image.shape
-    return (width // 2, height // 2)    # return (x, y)
+    width, height = image.size
+    return (width // 2, height // 2)
 
 def create_instruction_screen(text):
+    font_size = 24
     instructions = create_white_screen()
+    draw = ImageDraw.Draw(instructions)
     x_mid, y_mid = get_center_coordinates(instructions)
-    x0, y0 = x_mid //2, y_mid //2
-    dy = 18
-    for i, line in enumerate(text.split('\n')):
-        y = y0 + i * dy
-        x = x0
-        cv2.putText(img=instructions, text=line, org = (x,y),
-                    fontFace=cv2.FONT_HERSHEY_SIMPLEX, fontScale=1,
-                    color=(0,0,0), thickness=2, lineType=cv2.LINE_AA)
-    return instructions
+
+    font = ImageFont.truetype("NotoSans-Regular.ttf", font_size)
+    lines = text.split('\n')
+    text_height = len(lines) * font_size * 1.2
+    y = y_mid - text_height // 2 + font_size // 2
+    
+    for line in lines:
+        bbox = font.getbbox(line)
+        f_width, f_height = bbox[2] - bbox[0], bbox[3] - bbox[1]
+        x = x_mid - f_width // 2
+        draw.text((x, y), line, font=font, fill=(0, 0, 0))
+        y += f_height * 1.4
+    return np.array(instructions)
 
 def create_fixation_screen():
     fixation = create_white_screen()
+    draw = ImageDraw.Draw(fixation)
     x, y = get_center_coordinates(fixation)
 
     size = 20
-    cv2.line(fixation, (x - size, y), (x + size, y), (0, 0, 0), thickness=2)
-    cv2.line(fixation, (x, y - size), (x, y + size), (0, 0, 0), thickness=2)
-    return fixation
+    draw.line([(x - size, y), (x + size, y)], fill=(0, 0, 0), width=3)
+    draw.line([(x, y - size), (x, y + size)], fill=(0, 0, 0), width=3)
+    return np.array(fixation)
 
 def run():
     # Create the GUI to enter experiment parameters, returns a parameters object
@@ -219,10 +228,10 @@ def run():
     ws.append(['ID', 'Order', 'Video', 'Audio_path'])
 
     # Display blank screen and wait for key press
-    blank = create_white_screen()
+    blank = np.array(create_white_screen())
     fixation = create_fixation_screen()
     try:
-        with open (params.inst_path, 'r') as f:
+        with open (params.inst_path, 'r', encoding='utf-8') as f:
             instructions = create_instruction_screen(f.read())
     except FileNotFoundError:
         instructions = create_instruction_screen("Press any key to continue...")
@@ -255,7 +264,7 @@ def run():
         cv2.waitKey(params.white_dur)
 
         sd.wait() # wait for recording to finish
-        audio_file = f"{video_file[:-4]}_{params.participant_id}_{params.unique_key}.wav"
+        audio_file = f"{video_file[:-4]}_{params.participant_id}.wav"
         audio_path = os.path.join(participant_dir, audio_file)
         write(audio_path, params.sample_rate, recording)
 
